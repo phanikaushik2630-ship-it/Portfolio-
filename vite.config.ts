@@ -5,6 +5,8 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Supports both root domains (Netlify/Vercel) and GitHub Pages subpaths
+  base: process.env.BASE_PATH || '/',
   plugins: [
     react(),
     tailwindcss(),
@@ -25,7 +27,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+          'three-vendor': ['three'],
           'gsap-vendor': ['gsap'],
         },
       },

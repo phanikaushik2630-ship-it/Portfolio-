@@ -1,6 +1,17 @@
 # 🌌 Phanindra Kaushik Chennu — Personal Portfolio
 
-A personal portfolio built with React 19, TypeScript, Tailwind CSS v4, Three.js, and GSAP.
+[![Live Site](https://img.shields.io/badge/Live_Site-Visit_Portfolio-c8a96e?style=for-the-badge&logo=google-chrome&logoColor=white)](https://phanikaushik2630-ship-it.github.io/Portfolio-/)
+[![GitHub](https://img.shields.io/badge/GitHub-Profile-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/phanikaushik2630-ship-it)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/phanindra-kaushik-chennu-aa9114335/)
+
+> A personal portfolio built with React 19, TypeScript, Tailwind CSS v4, Three.js, and GSAP.
+
+---
+
+## 🌐 Live Demos & Links
+
+- **GitHub Pages Live Deployment:** [https://phanikaushik2630-ship-it.github.io/Portfolio-/](https://phanikaushik2630-ship-it.github.io/Portfolio-/)
+- **Repository:** [https://github.com/phanikaushik2630-ship-it/Portfolio-](https://github.com/phanikaushik2630-ship-it/Portfolio-)
 
 ---
 
