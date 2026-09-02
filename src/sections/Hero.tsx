@@ -64,7 +64,7 @@ function Hero3DFallback() {
 }
 
 // ── Background radial gradient layer ──────────────────────
-function HeroBackground({ x, y, reduced }: { x: number; y: number; reduced: boolean }) {
+function HeroBackground({ x, y, reduced, isMobile }: { x: number; y: number; reduced: boolean; isMobile: boolean }) {
   return (
     <div
       id="hero-parallax-bg"
@@ -79,17 +79,29 @@ function HeroBackground({ x, y, reduced }: { x: number; y: number; reduced: bool
       <div
         className="absolute inset-0"
         style={{
-          background: `
-            radial-gradient(ellipse 70% 60% at 75% 50%,
-              rgba(200, 169, 110, 0.12) 0%,
-              rgba(200, 169, 110, 0.03) 45%,
-              transparent 70%
-            ),
-            radial-gradient(ellipse 50% 50% at 20% 30%,
-              rgba(107, 125, 232, 0.06) 0%,
-              transparent 60%
-            )
-          `,
+          background: isMobile
+            ? `
+              radial-gradient(ellipse 90% 60% at 50% 35%,
+                rgba(200, 169, 110, 0.16) 0%,
+                rgba(200, 169, 110, 0.04) 55%,
+                transparent 75%
+              ),
+              radial-gradient(ellipse 80% 50% at 50% 75%,
+                rgba(107, 125, 232, 0.08) 0%,
+                transparent 70%
+              )
+            `
+            : `
+              radial-gradient(ellipse 70% 60% at 75% 50%,
+                rgba(200, 169, 110, 0.14) 0%,
+                rgba(200, 169, 110, 0.04) 45%,
+                transparent 70%
+              ),
+              radial-gradient(ellipse 50% 50% at 20% 30%,
+                rgba(107, 125, 232, 0.06) 0%,
+                transparent 60%
+              )
+            `,
         }}
       />
 
@@ -104,7 +116,7 @@ function HeroBackground({ x, y, reduced }: { x: number; y: number; reduced: bool
 
       {/* Tech dot grid overlay */}
       <div
-        className="absolute inset-0 opacity-[0.02]"
+        className="absolute inset-0 opacity-[0.025]"
         style={{
           backgroundImage:
             'radial-gradient(circle, var(--color-text-muted) 1px, transparent 1px)',
@@ -236,16 +248,16 @@ export default function Hero() {
       className="relative min-h-[100svh] w-full max-w-full overflow-hidden bg-base flex items-center"
     >
       {/* ── Layer 0: Parallax background ─────────────── */}
-      <HeroBackground x={mouse.x} y={mouse.y} reduced={reduced} />
+      <HeroBackground x={mouse.x} y={mouse.y} reduced={reduced} isMobile={isMobile} />
 
       {/* ── Layer 1: 3D Canvas ───────────────────────── */}
       <div
         aria-hidden="true"
         className={[
-          'absolute inset-0 z-10 overflow-hidden',
+          'absolute inset-0 z-10 overflow-hidden flex items-center',
           isMobile
-            ? 'opacity-25 pointer-events-none scale-90'
-            : 'left-[38%] xl:left-[42%] opacity-100 pointer-events-auto',
+            ? 'justify-center opacity-70 pointer-events-auto'
+            : 'justify-end left-[35%] xl:left-[40%] opacity-100 pointer-events-auto',
         ].join(' ')}
         style={{
           background:  'transparent',
@@ -253,9 +265,11 @@ export default function Hero() {
           transition:  'transform 1s cubic-bezier(0.25,0.46,0.45,0.94)',
         }}
       >
-        <Suspense fallback={<Hero3DFallback />}>
-          <HeroCanvas reduced={reduced} />
-        </Suspense>
+        <div className="w-full h-full">
+          <Suspense fallback={<Hero3DFallback />}>
+            <HeroCanvas reduced={reduced} />
+          </Suspense>
+        </div>
       </div>
 
       {/* ── Layer 2: Text content ─────────────────────── */}

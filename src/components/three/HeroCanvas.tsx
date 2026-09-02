@@ -1,15 +1,15 @@
 /**
  * HeroCanvas.tsx
  *
- * Direct Three.js WebGL visual canvas — 100% resilient, zero React 19 reconciler crashes.
+ * Direct Three.js WebGL visual canvas — 100% resilient across mobile & desktop.
  * Features:
  *   • TorusKnot gold metallic geometry with wireframe overlay
  *   • Outer rotating icosahedron wireframe shell
  *   • Inner glowing core sphere
  *   • Dynamic orbiting point light for specular reflections
  *   • Interactive 360° drag rotation with damping & auto-spin
+ *   • Responsive mobile camera FOV and scaling
  *   • Guaranteed alpha transparency (setClearColor 0x000000, 0)
- *   • WebGL context loss recovery & graceful fallback
  */
 
 import { useRef, useEffect } from 'react'
@@ -32,15 +32,21 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
     let renderer: THREE.WebGLRenderer | null = null
 
     try {
-      // 1. Scene & Camera
+      // 1. Scene & Camera setup
       const scene = new THREE.Scene()
       scene.background = null // Strictly transparent
 
-      const width  = container.clientWidth  || 600
-      const height = container.clientHeight || 700
+      const width  = container.clientWidth  || window.innerWidth
+      const height = container.clientHeight || window.innerHeight
 
-      const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100)
-      camera.position.set(0, 0, 5)
+      const isNarrow = width < 768
+      const camera = new THREE.PerspectiveCamera(
+        isNarrow ? 50 : 42,
+        width / height,
+        0.1,
+        100
+      )
+      camera.position.set(0, isNarrow ? 0.1 : 0, isNarrow ? 5.8 : 5.0)
 
       // 2. WebGL Renderer with forced transparency
       renderer = new THREE.WebGLRenderer({
@@ -51,22 +57,22 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         premultipliedAlpha: false,
       })
       renderer.setSize(width, height, false)
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, reduced ? 1 : 1.5))
-      renderer.setClearColor(0x000000, 0) // Fully transparent clear color
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+      renderer.setClearColor(0x000000, 0)
 
       // 3. Lighting Rig
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
       scene.add(ambientLight)
 
-      const dirLight = new THREE.DirectionalLight(0xfff5e6, 2.0)
+      const dirLight = new THREE.DirectionalLight(0xfff5e6, 2.2)
       dirLight.position.set(5, 8, 5)
       scene.add(dirLight)
 
-      const fillLight = new THREE.PointLight(0x6b7de8, 2.5, 15)
+      const fillLight = new THREE.PointLight(0x6b7de8, 2.5, 16)
       fillLight.position.set(-6, -4, -4)
       scene.add(fillLight)
 
-      const orbitLight = new THREE.PointLight(0xc8a96e, 3.5, 12)
+      const orbitLight = new THREE.PointLight(0xc8a96e, 4.0, 14)
       scene.add(orbitLight)
 
       // 4. Geometry & Meshes
@@ -74,13 +80,13 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
       scene.add(rootGroup)
 
       // Primary Torus Knot
-      const knotSegs = reduced ? { tub: 48, rad: 8 } : { tub: 100, rad: 16 }
+      const knotSegs = reduced ? { tub: 64, rad: 10 } : { tub: 100, rad: 16 }
       const knotGeo = new THREE.TorusKnotGeometry(1, 0.32, knotSegs.tub, knotSegs.rad, 2, 3)
 
       const knotMat = new THREE.MeshStandardMaterial({
         color: 0xc8a96e,
-        metalness: 0.9,
-        roughness: 0.15,
+        metalness: 0.92,
+        roughness: 0.12,
       })
       const knotMesh = new THREE.Mesh(knotGeo, knotMat)
       rootGroup.add(knotMesh)
@@ -90,7 +96,7 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         color: 0xd4b87a,
         wireframe: true,
         transparent: true,
-        opacity: 0.08,
+        opacity: 0.1,
       })
       const knotWireMesh = new THREE.Mesh(knotGeo, knotWireMat)
       knotWireMesh.scale.setScalar(1.035)
@@ -103,68 +109,65 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         color: 0xc8a96e,
         wireframe: true,
         transparent: true,
-        opacity: 0.05,
+        opacity: 0.06,
       })
       const icoMesh = new THREE.Mesh(icoGeo, icoMat)
       rootGroup.add(icoMesh)
 
       // Inner Glowing Core
-      const coreGeo = new THREE.SphereGeometry(0.35, 16, 16)
+      const coreGeo = new THREE.SphereGeometry(0.38, 16, 16)
       const coreMat = new THREE.MeshBasicMaterial({
         color: 0xc8a96e,
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.15,
       })
       const coreMesh = new THREE.Mesh(coreGeo, coreMat)
       rootGroup.add(coreMesh)
 
-      // Background Stars Particles (Desktop only)
-      let particlesMesh: THREE.Points | null = null
-      if (!reduced) {
-        const particleCount = 200
-        const particleGeo = new THREE.BufferGeometry()
-        const positions = new Float32Array(particleCount * 3)
+      // Ambient Background Particles
+      const particleCount = isNarrow ? 100 : 220
+      const particleGeo = new THREE.BufferGeometry()
+      const positions = new Float32Array(particleCount * 3)
 
-        for (let i = 0; i < particleCount * 3; i += 3) {
-          positions[i]     = (Math.random() - 0.5) * 15
-          positions[i + 1] = (Math.random() - 0.5) * 15
-          positions[i + 2] = (Math.random() - 0.5) * 10 - 2
-        }
-
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-        const particleMat = new THREE.PointsMaterial({
-          color: 0xc8a96e,
-          size: 0.04,
-          transparent: true,
-          opacity: 0.35,
-        })
-        particlesMesh = new THREE.Points(particleGeo, particleMat)
-        scene.add(particlesMesh)
+      for (let i = 0; i < particleCount * 3; i += 3) {
+        positions[i]     = (Math.random() - 0.5) * 16
+        positions[i + 1] = (Math.random() - 0.5) * 16
+        positions[i + 2] = (Math.random() - 0.5) * 10 - 2
       }
+
+      particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      const particleMat = new THREE.PointsMaterial({
+        color: 0xc8a96e,
+        size: 0.045,
+        transparent: true,
+        opacity: 0.4,
+      })
+      const particlesMesh = new THREE.Points(particleGeo, particleMat)
+      scene.add(particlesMesh)
 
       // 5. Interactive Drag Rotation & Momentum
       let isDragging = false
-      let prevMousePos = { x: 0, y: 0 }
+      let prevPointerPos = { x: 0, y: 0 }
       let targetRot = { x: 0, y: 0 }
       let currentRot = { x: 0, y: 0 }
 
       const onPointerDown = (e: PointerEvent) => {
         isDragging = true
-        prevMousePos = { x: e.clientX, y: e.clientY }
+        prevPointerPos = { x: e.clientX, y: e.clientY }
       }
 
       const onPointerMove = (e: PointerEvent) => {
         if (!isDragging) return
-        const deltaX = e.clientX - prevMousePos.x
-        const deltaY = e.clientY - prevMousePos.y
+        const deltaX = e.clientX - prevPointerPos.x
+        const deltaY = e.clientY - prevPointerPos.y
 
-        targetRot.y += deltaX * 0.006
-        targetRot.x += deltaY * 0.006
+        targetRot.y += deltaX * 0.007
+        targetRot.x += deltaY * 0.007
 
         // Clamp vertical tilt
         targetRot.x = Math.max(-0.8, Math.min(0.8, targetRot.x))
 
-        prevMousePos = { x: e.clientX, y: e.clientY }
+        prevPointerPos = { x: e.clientX, y: e.clientY }
       }
 
       const onPointerUp = () => {
@@ -181,6 +184,9 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         const w = container.clientWidth
         const h = container.clientHeight
         if (w === 0 || h === 0) return
+        const narrow = w < 768
+        camera.fov = narrow ? 50 : 42
+        camera.position.z = narrow ? 5.8 : 5.0
         camera.aspect = w / h
         camera.updateProjectionMatrix()
         renderer.setSize(w, h, false)
@@ -196,9 +202,9 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         const delta = clock.getDelta()
         const elapsedTime = clock.getElapsedTime()
 
-        // Auto rotation + smooth inertia damping
+        // Auto rotation + inertia damping
         if (!isDragging) {
-          targetRot.y += (reduced ? 0.3 : 0.6) * delta
+          targetRot.y += (reduced ? 0.35 : 0.65) * delta
         }
 
         currentRot.x += (targetRot.x - currentRot.x) * 0.08
@@ -208,23 +214,21 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         rootGroup.rotation.y = currentRot.y
 
         // Mesh animations
-        knotMesh.position.y = Math.sin(elapsedTime * 0.6) * 0.1
+        knotMesh.position.y = Math.sin(elapsedTime * 0.6) * 0.12
         knotWireMesh.position.y = knotMesh.position.y
         knotWireMesh.rotation.z = elapsedTime * 0.04
 
         icoMesh.rotation.x = elapsedTime * 0.05
         icoMesh.rotation.z = -elapsedTime * 0.03
 
-        coreMesh.scale.setScalar(0.35 + Math.sin(elapsedTime * 1.5) * 0.04)
+        coreMesh.scale.setScalar(0.38 + Math.sin(elapsedTime * 1.5) * 0.04)
 
         // Orbiting light position
         orbitLight.position.x = Math.sin(elapsedTime * 0.6) * 4
         orbitLight.position.z = Math.cos(elapsedTime * 0.6) * 4
         orbitLight.position.y = Math.sin(elapsedTime * 0.4) * 2
 
-        if (particlesMesh) {
-          particlesMesh.rotation.y = elapsedTime * 0.02
-        }
+        particlesMesh.rotation.y = elapsedTime * 0.02
 
         renderer?.render(scene, camera)
       }
@@ -246,6 +250,8 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         icoMat.dispose()
         coreGeo.dispose()
         coreMat.dispose()
+        particleGeo.dispose()
+        particleMat.dispose()
         renderer?.dispose()
       }
     } catch (err) {
@@ -264,7 +270,7 @@ export default function HeroCanvas({ reduced }: HeroCanvasProps) {
         className="w-full h-full block cursor-grab active:cursor-grabbing"
         style={{
           background: 'transparent',
-          touchAction: 'none',
+          touchAction: 'pan-y',
         }}
       />
     </div>
