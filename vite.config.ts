@@ -5,8 +5,8 @@ import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Supports both root domains (Netlify/Vercel) and GitHub Pages subpaths
-  base: process.env.BASE_PATH || '/',
+  // Base path for GitHub Pages deployment (https://phanikaushik2630-ship-it.github.io/Portfolio-/)
+  base: '/Portfolio-/',
   plugins: [
     react(),
     tailwindcss(),
